@@ -1,0 +1,150 @@
+DROP DATABASE IF EXISTS gestion_academica_universidad;
+
+CREATE DATABASE gestion_academica_universidad
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE gestion_academica_universidad;
+
+/* ============================================================
+   Tabla: estudiantes
+   ============================================================ */
+
+CREATE TABLE estudiantes (
+  id_estudiante INT AUTO_INCREMENT PRIMARY KEY,
+  nombre_completo VARCHAR(150) NOT NULL,
+  correo_electronico VARCHAR(150) NOT NULL UNIQUE,
+  genero VARCHAR(20) NOT NULL,
+  identificacion VARCHAR(30) NOT NULL UNIQUE,
+  carrera VARCHAR(120) NOT NULL,
+  fecha_nacimiento DATE NOT NULL,
+  fecha_ingreso DATE NOT NULL,
+  CONSTRAINT chk_estudiantes_genero
+    CHECK (genero IN ('FEMENINO', 'MASCULINO', 'OTRO', 'NO_REPORTA')),
+  CONSTRAINT chk_estudiantes_fechas
+    CHECK (fecha_ingreso > fecha_nacimiento)
+);
+
+/* ============================================================
+   Tabla: docentes
+   ============================================================ */
+
+CREATE TABLE docentes (
+  id_docente INT AUTO_INCREMENT PRIMARY KEY,
+  nombre_completo VARCHAR(150) NOT NULL,
+  correo_institucional VARCHAR(150) NOT NULL UNIQUE,
+  departamento_academico VARCHAR(120) NOT NULL,
+  anios_experiencia TINYINT NOT NULL,
+  CONSTRAINT chk_docentes_experiencia
+    CHECK (anios_experiencia >= 0)
+);
+
+/* ============================================================
+   Tabla: cursos
+   ============================================================ */
+
+CREATE TABLE cursos (
+  id_curso INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL,
+  codigo VARCHAR(30) NOT NULL UNIQUE,
+  creditos TINYINT NOT NULL,
+  semestre TINYINT NOT NULL,
+  id_docente INT NOT NULL,
+  CONSTRAINT chk_cursos_creditos
+    CHECK (creditos BETWEEN 1 AND 6),
+  CONSTRAINT chk_cursos_semestre
+    CHECK (semestre BETWEEN 1 AND 10),
+  CONSTRAINT fk_cursos_docentes
+    FOREIGN KEY (id_docente)
+    REFERENCES docentes(id_docente)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+);
+
+/* ============================================================
+   Tabla: inscripciones
+   ============================================================ */
+
+CREATE TABLE inscripciones (
+  id_inscripcion INT AUTO_INCREMENT PRIMARY KEY,
+  id_estudiante INT NOT NULL,
+  id_curso INT NOT NULL,
+  fecha_inscripcion DATE NOT NULL,
+  calificacion_final DECIMAL(3,2) NULL,
+  CONSTRAINT uq_inscripciones_estudiante_curso
+    UNIQUE (id_estudiante, id_curso),
+  CONSTRAINT chk_inscripciones_calificacion
+    CHECK (calificacion_final IS NULL OR calificacion_final BETWEEN 0.00 AND 5.00),
+  CONSTRAINT fk_inscripciones_estudiantes
+    FOREIGN KEY (id_estudiante)
+    REFERENCES estudiantes(id_estudiante)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_inscripciones_cursos
+    FOREIGN KEY (id_curso)
+    REFERENCES cursos(id_curso)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+);
+
+/* ============================================================
+   Datos de ejemplo para probar las llaves y restricciones
+   ============================================================ */
+
+INSERT INTO estudiantes
+  (nombre_completo, correo_electronico, genero, identificacion, carrera, fecha_nacimiento, fecha_ingreso)
+VALUES
+  ('Laura Gomez Perez', 'laura.gomez@universidad.edu', 'FEMENINO', '1001001001', 'Ingenieria de Sistemas', '2003-05-14', '2022-01-20'),
+  ('Carlos Martinez Ruiz', 'carlos.martinez@universidad.edu', 'MASCULINO', '1001001002', 'Administracion de Empresas', '2002-11-22', '2021-07-18'),
+  ('Ana Rodriguez Lopez', 'ana.rodriguez@universidad.edu', 'FEMENINO', '1001001003', 'Ingenieria de Sistemas', '2004-02-10', '2023-01-23'),
+  ('Miguel Torres Castro', 'miguel.torres@universidad.edu', 'MASCULINO', '1001001004', 'Matematicas', '2001-08-30', '2020-08-03'),
+  ('Sofia Ramirez Diaz', 'sofia.ramirez@universidad.edu', 'FEMENINO', '1001001005', 'Ingenieria Industrial', '2003-12-01', '2022-08-01');
+
+INSERT INTO docentes
+  (nombre_completo, correo_institucional, departamento_academico, anios_experiencia)
+VALUES
+  ('Patricia Mendoza Salazar', 'patricia.mendoza@universidad.edu', 'Ciencias de la Computacion', 12),
+  ('Andres Herrera Molina', 'andres.herrera@universidad.edu', 'Matematicas', 15),
+  ('Claudia Vargas Rios', 'claudia.vargas@universidad.edu', 'Administracion', 9);
+
+INSERT INTO cursos
+  (nombre, codigo, creditos, semestre, id_docente)
+VALUES
+  ('Bases de Datos I', 'BD-101', 4, 4, 1),
+  ('Programacion I', 'PR-101', 3, 1, 1),
+  ('Calculo Diferencial', 'MT-201', 4, 2, 2),
+  ('Fundamentos de Administracion', 'AD-110', 2, 1, 3);
+
+INSERT INTO inscripciones
+  (id_estudiante, id_curso, fecha_inscripcion, calificacion_final)
+VALUES
+  (1, 1, '2025-01-25', 4.30),
+  (1, 2, '2025-01-25', 3.80),
+  (2, 4, '2025-01-26', 3.40),
+  (3, 1, '2025-01-28', 4.80),
+  (3, 3, '2025-01-28', 4.20),
+  (4, 3, '2025-01-30', 2.90),
+  (5, 2, '2025-02-01', 4.00),
+  (5, 4, '2025-02-01', 3.60);
+
+/* ============================================================
+   Consultas basicas de verificacion
+   ============================================================ */
+
+SELECT * FROM estudiantes;
+SELECT * FROM docentes;
+SELECT * FROM cursos;
+SELECT * FROM inscripciones;
+
+SELECT
+  e.nombre_completo AS estudiante,
+  c.nombre AS curso,
+  c.codigo,
+  d.nombre_completo AS docente,
+  i.fecha_inscripcion,
+  i.calificacion_final
+FROM inscripciones i
+INNER JOIN estudiantes e ON e.id_estudiante = i.id_estudiante
+INNER JOIN cursos c ON c.id_curso = i.id_curso
+INNER JOIN docentes d ON d.id_docente = c.id_docente
+ORDER BY e.nombre_completo, c.nombre;
