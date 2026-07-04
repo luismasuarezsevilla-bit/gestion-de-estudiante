@@ -1,4 +1,4 @@
-# Sistema Academico en SQL - TASK 1
+# Sistema Academico en SQL - H2
 
 Proyecto de diseno inicial y creacion de una base de datos academica para una institucion universitaria.
 
